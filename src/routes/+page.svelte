@@ -119,10 +119,15 @@
       progressRatio = Math.min(1, elapsed / CAMERA_INTERVAL_MS);
     }, 1000 / 60);
     
+    // Start raindrops
+    scheduleNextDrop();
+
     return () => {
       clearInterval(imageInterval);
       clearInterval(cameraInterval);
       clearInterval(progressInterval);
+      if (raindropTimer) clearTimeout(raindropTimer);
+      if (raindropsContainer) raindropsContainer.innerHTML = '';
     };
   });
   
@@ -154,12 +159,69 @@
     
     return date.toLocaleString();
   }
+
+  let raindropsContainer: HTMLDivElement | null = null;
+  let raindropTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function randomBetween(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
+  }
+
+  function scheduleNextDrop() {
+    const delayMs = randomBetween(100, 1500);
+    raindropTimer = setTimeout(() => {
+      spawnRaindrop();
+      scheduleNextDrop();
+    }, delayMs);
+  }
+
+  function spawnRaindrop() {
+    const container = raindropsContainer;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const containerFontSize = parseFloat(getComputedStyle(container).fontSize) || 16;
+
+    const sizeEm = randomBetween(0.5, 1.5);
+    const sizePx = sizeEm * containerFontSize;
+
+    const x = randomBetween(0, Math.max(0, rect.width - sizePx));
+    const y = randomBetween(0, Math.max(0, rect.height * 0.6)); // land somewhere in upper 60%
+
+    const drop = document.createElement('div');
+    drop.className = 'raindrop';
+    drop.style.width = `${sizeEm}em`;
+    drop.style.height = `${sizeEm}em`;
+    drop.style.left = `${x}px`;
+    drop.style.top = `${y}px`;
+
+    // fall past bottom edge
+    const fallPx = Math.max(50, rect.height - y + sizePx + 20);
+    drop.style.setProperty('--fall', `${fallPx}px`);
+
+    // slight random fall duration
+    const fallMs = Math.round(randomBetween(2200, 4200));
+    drop.style.setProperty('--fallMs', `${fallMs}ms`);
+
+    const onAnimEnd = (ev: AnimationEvent) => {
+      if (ev.animationName !== 'raindrop-fall') return; // ignore splash (::after)
+      drop.removeEventListener('animationend', onAnimEnd);
+      if (drop.parentNode) drop.parentNode.removeChild(drop);
+    };
+
+    drop.addEventListener('animationend', onAnimEnd);
+
+    container.appendChild(drop);
+  }
 </script>
 
 {#if currentData.webcam}
 <!-- use a wrapper to attach idle listeners and toggle idle class -->
 <div use:attachIdleListeners class={`webcam-container ${isIdle && !isLoadingNewCamera ? 'idle' : ''}`}>
   <img src={imgUrl} alt={currentData.webcam.title || 'Rainy webcam'} class="webcam-image" />
+
+  <!-- Raindrops overlay -->
+  <div class="raindrops-overlay" bind:this={raindropsContainer}></div>
 
   <!-- Bottom countdown progress bar -->
   <div class="progress-bottom">

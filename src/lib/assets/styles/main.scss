@@ -74,3 +74,68 @@ body {
   opacity: 0;
 }
 
+/* Layering: webcam image < raindrops (2) < weather overlay (3) < progress (5) */
+.weather-overlay {
+  z-index: 3;
+}
+
+/* Raindrops layering and animation */
+.raindrops-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.raindrop {
+  position: absolute;
+  border-radius: 50%;
+  /* subtle lens effect */
+  backdrop-filter: blur(.6m) saturate(200%) contrast(120%);
+  -webkit-backdrop-filter: blur(.6em) saturate(200%) contrast(110%);
+  background: radial-gradient(closest-side, rgba(255,255,255,.25), rgba(255,255,255,.15) 60%, rgba(255,255,255,.07) 80%, rgba(255,255,255,0) 90%);
+  box-shadow: inset 0 .02em .2em rgba(255,255,255,.5), inset 0 -.03em .3em rgba(0,0,0,.3);
+  will-change: transform;
+  animation: raindrop-fall var(--fallMs, 2800ms) cubic-bezier(.5,0,1,1) forwards;
+}
+
+/* Quick expanding splash ring on impact */
+.raindrop::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(.4);
+  border: .06em solid rgba(255,255,255,.55);
+  box-shadow: 0 0 .12em rgba(255,255,255,.5);
+  opacity: .9;
+  pointer-events: none;
+  animation: raindrop-splash 220ms ease-out forwards;
+}
+
+@keyframes raindrop-splash {
+  0% { transform: translate(-50%, -50%) scale(.4); opacity: .9; }
+  60% { transform: translate(-50%, -50%) scale(1.6); opacity: .45; }
+  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+}
+
+@keyframes raindrop-fall {
+  0% {
+    transform: translateY(0) scale(.94);
+    opacity: .96;
+  }
+  4% {
+    transform: translateY(0) scale(1.1);
+  }
+  6% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(var(--fall, 100vh)) scale(1);
+    opacity: .85;
+  }
+}
+
