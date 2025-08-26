@@ -1,0 +1,8 @@
+{
+	"/": [
+		"src/routes/+page.server.ts"
+	],
+	"/api/webcam": [
+		"src/routes/api/webcam/+server.ts"
+	]
+}
