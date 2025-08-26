@@ -6,7 +6,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Rain Observer</title>
+	<title>rain.observer</title>
 </svelte:head>
 
 {@render children?.()}

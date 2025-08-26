@@ -10,7 +10,7 @@ html {
 body {
   font-family: 'Monument Grotesk';
   font-size: 5vw;
-  line-height: .9em;
+  line-height: .95em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #f20;
@@ -22,7 +22,7 @@ body {
 @media (screen and min-width: 768px) {
   body {
     font-size: 3vw;
-    line-height: .9em;
+    line-height: .95em;
   }
 }
 
@@ -64,3 +64,13 @@ body {
   border: .0125em solid #fd0;
   box-shadow: .05em .05em 0 #000;
 }
+
+/* Fade non-location parts of the overlay on idle */
+.weather-overlay .weather-content > :not(.location-name) {
+  /* no transition here so returning from idle is instant */
+}
+
+.webcam-container.idle .weather-overlay .weather-content > :not(.location-name) {
+  opacity: 0;
+}
+

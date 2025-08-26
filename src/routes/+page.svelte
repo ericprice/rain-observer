@@ -48,6 +48,7 @@
   }
   
   async function fetchNewCamera() {
+    setActive(); // show UI immediately when loading starts
     isLoadingNewCamera = true;
     try {
       const response = await fetch('/api/webcam');
@@ -58,12 +59,39 @@
         imageRefreshCount = 0; // Reset image refresh count for new camera
         cameraChangeCount++;
         resetProgress();
+        setActive(); // show UI and restart idle timer on camera change
       }
     } catch (error) {
       console.error('Failed to fetch new camera:', error);
     } finally {
       isLoadingNewCamera = false;
     }
+  }
+  
+  // Idle detection
+  const IDLE_TIMEOUT_MS = 5000;
+  let isIdle = $state(false);
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function setActive() {
+    if (isIdle) {
+      isIdle = false; // remove idle immediately
+    }
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      isIdle = true; // enter idle after 5s
+    }, IDLE_TIMEOUT_MS);
+  }
+
+  function attachIdleListeners(node: HTMLElement) {
+    const events = ['mousemove', 'pointerdown', 'keydown', 'touchstart'];
+    events.forEach((e) => node.addEventListener(e, setActive, { passive: true } as AddEventListenerOptions));
+    // start timer on mount
+    setActive();
+    return () => {
+      events.forEach((e) => node.removeEventListener(e, setActive));
+      if (idleTimer) clearTimeout(idleTimer);
+    };
   }
   
   onMount(() => {
@@ -129,7 +157,8 @@
 </script>
 
 {#if currentData.webcam}
-<div class="webcam-container">
+<!-- use a wrapper to attach idle listeners and toggle idle class -->
+<div use:attachIdleListeners class={`webcam-container ${isIdle && !isLoadingNewCamera ? 'idle' : ''}`}>
   <img src={imgUrl} alt={currentData.webcam.title || 'Rainy webcam'} class="webcam-image" />
 
   <!-- Bottom countdown progress bar -->
