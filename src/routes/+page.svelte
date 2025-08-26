@@ -69,7 +69,7 @@
   }
   
   // Idle detection
-  const IDLE_TIMEOUT_MS = 2500;
+  const IDLE_TIMEOUT_MS = 3500;
   let isIdle = $state(false);
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
