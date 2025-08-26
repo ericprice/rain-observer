@@ -10,7 +10,7 @@ return {
 	assets: new Set(["robots.txt"]),
 	mimeTypes: {".txt":"text/plain"},
 	_: {
-		client: {start:"_app/immutable/entry/start.BKmzFVu2.js",app:"_app/immutable/entry/app.D3lJENnr.js",imports:["_app/immutable/entry/start.BKmzFVu2.js","_app/immutable/chunks/CdIZ-4Ob.js","_app/immutable/chunks/DTZc6t40.js","_app/immutable/chunks/C2HaNSK4.js","_app/immutable/chunks/Bsa8e9aV.js","_app/immutable/entry/app.D3lJENnr.js","_app/immutable/chunks/C2HaNSK4.js","_app/immutable/chunks/DTZc6t40.js","_app/immutable/chunks/Bsa8e9aV.js","_app/immutable/chunks/DsnmJJEf.js","_app/immutable/chunks/DogvFaiY.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.D8dx_AZx.js",app:"_app/immutable/entry/app.ClXH2dOS.js",imports:["_app/immutable/entry/start.D8dx_AZx.js","_app/immutable/chunks/CBXBkv8x.js","_app/immutable/chunks/pFRYz6ln.js","_app/immutable/chunks/ChSMbZUk.js","_app/immutable/entry/app.ClXH2dOS.js","_app/immutable/chunks/ChSMbZUk.js","_app/immutable/chunks/pFRYz6ln.js","_app/immutable/chunks/DsnmJJEf.js","_app/immutable/chunks/xle2z31F.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
@@ -26,6 +26,13 @@ return {
 				params: [],
 				page: { layouts: [0,], errors: [1,], leaf: 2 },
 				endpoint: null
+			},
+			{
+				id: "/api/webcam",
+				pattern: /^\/api\/webcam\/?$/,
+				params: [],
+				page: null,
+				endpoint: __memo(() => import('./entries/endpoints/api/webcam/_server.ts.js'))
 			}
 		],
 		prerendered_routes: new Set([]),

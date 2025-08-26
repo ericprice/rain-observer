@@ -9,7 +9,7 @@ html {
 
 body {
   font-family: 'Monument Grotesk';
-  font-size: 3vw;
+  font-size: 5vw;
   line-height: .9em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -17,6 +17,13 @@ body {
   text-shadow: .05em .05em 0 #000;
   -webkit-text-stroke: .0125em #fd0;
   font-feature-settings: "ss01" 1, "ss03" 1;
+}
+
+@media (screen and min-width: 768px) {
+  body {
+    font-size: 3vw;
+    line-height: .9em;
+  }
 }
 
 .webcam-container {
@@ -42,10 +49,10 @@ body {
 
 .progress-bottom {
   position: absolute;
-  left: .125em;
-  right: .125em;
+  left: .2em;
+  right: .2em;
   bottom: .125em;
-  height: .125em;
+  height: .1em;
   z-index: 5;
   pointer-events: none;
 }

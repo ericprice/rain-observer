@@ -10,13 +10,6 @@
       "_shared-server.js"
     ]
   },
-  "_attributes.js": {
-    "file": "chunks/attributes.js",
-    "name": "attributes",
-    "imports": [
-      "_escaping.js"
-    ]
-  },
   "_environment.js": {
     "file": "chunks/environment.js",
     "name": "environment"
@@ -24,10 +17,6 @@
   "_equality.js": {
     "file": "chunks/equality.js",
     "name": "equality"
-  },
-  "_escaping.js": {
-    "file": "chunks/escaping.js",
-    "name": "escaping"
   },
   "_exports.js": {
     "file": "chunks/exports.js",
@@ -73,6 +62,13 @@
     "file": "chunks/utils.js",
     "name": "utils"
   },
+  "_webcams.js": {
+    "file": "chunks/webcams.js",
+    "name": "webcams",
+    "imports": [
+      "_shared-server.js"
+    ]
+  },
   "node_modules/@sveltejs/kit/src/runtime/app/server/remote/index.js": {
     "file": "remote-entry.js",
     "name": "remote-entry",
@@ -90,7 +86,6 @@
     "src": "node_modules/@sveltejs/kit/src/runtime/components/svelte-5/error.svelte",
     "isEntry": true,
     "imports": [
-      "_escaping.js",
       "_index.js",
       "_equality.js",
       "_exports.js",
@@ -112,14 +107,29 @@
       "_internal.js"
     ]
   },
+  "src/lib/assets/fonts/ABCMonumentGrotesk-Regular.woff": {
+    "file": "_app/immutable/assets/ABCMonumentGrotesk-Regular.CWv4R6Ku.woff",
+    "src": "src/lib/assets/fonts/ABCMonumentGrotesk-Regular.woff"
+  },
+  "src/lib/assets/fonts/ABCMonumentGrotesk-Regular.woff2": {
+    "file": "_app/immutable/assets/ABCMonumentGrotesk-Regular.Cu2CztWC.woff2",
+    "src": "src/lib/assets/fonts/ABCMonumentGrotesk-Regular.woff2"
+  },
+  "src/lib/assets/fonts/ABCMonumentGrotesk-RegularItalic.woff": {
+    "file": "_app/immutable/assets/ABCMonumentGrotesk-RegularItalic.CM_nKc8P.woff",
+    "src": "src/lib/assets/fonts/ABCMonumentGrotesk-RegularItalic.woff"
+  },
+  "src/lib/assets/fonts/ABCMonumentGrotesk-RegularItalic.woff2": {
+    "file": "_app/immutable/assets/ABCMonumentGrotesk-RegularItalic.BUmvec5N.woff2",
+    "src": "src/lib/assets/fonts/ABCMonumentGrotesk-RegularItalic.woff2"
+  },
   "src/routes/+layout.svelte": {
     "file": "entries/pages/_layout.svelte.js",
     "name": "entries/pages/_layout.svelte",
     "src": "src/routes/+layout.svelte",
     "isEntry": true,
     "imports": [
-      "_index.js",
-      "_attributes.js"
+      "_index.js"
     ]
   },
   "src/routes/+page.server.ts": {
@@ -128,6 +138,7 @@
     "src": "src/routes/+page.server.ts",
     "isEntry": true,
     "imports": [
+      "_webcams.js",
       "_shared-server.js"
     ]
   },
@@ -137,8 +148,26 @@
     "src": "src/routes/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_index.js",
-      "_attributes.js"
+      "_index.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.D0ntUQJu.css"
+    ],
+    "assets": [
+      "_app/immutable/assets/ABCMonumentGrotesk-Regular.Cu2CztWC.woff2",
+      "_app/immutable/assets/ABCMonumentGrotesk-Regular.CWv4R6Ku.woff",
+      "_app/immutable/assets/ABCMonumentGrotesk-RegularItalic.BUmvec5N.woff2",
+      "_app/immutable/assets/ABCMonumentGrotesk-RegularItalic.CM_nKc8P.woff"
+    ]
+  },
+  "src/routes/api/webcam/+server.ts": {
+    "file": "entries/endpoints/api/webcam/_server.ts.js",
+    "name": "entries/endpoints/api/webcam/_server.ts",
+    "src": "src/routes/api/webcam/+server.ts",
+    "isEntry": true,
+    "imports": [
+      "_webcams.js",
+      "_shared-server.js"
     ]
   }
 }

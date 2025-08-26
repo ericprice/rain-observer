@@ -38,6 +38,37 @@ const HYDRATION_START = "[";
 const HYDRATION_END = "]";
 const HYDRATION_ERROR = {};
 const UNINITIALIZED = Symbol();
+const ATTR_REGEX = /[&"<]/g;
+const CONTENT_REGEX = /[&<]/g;
+function escape_html(value, is_attr) {
+  const str = String(value ?? "");
+  const pattern = is_attr ? ATTR_REGEX : CONTENT_REGEX;
+  pattern.lastIndex = 0;
+  let escaped = "";
+  let last = 0;
+  while (pattern.test(str)) {
+    const i = pattern.lastIndex - 1;
+    const ch = str[i];
+    escaped += str.substring(last, i) + (ch === "&" ? "&amp;" : ch === '"' ? "&quot;" : "&lt;");
+    last = i + 1;
+  }
+  return escaped + str.substring(last);
+}
+const replacements = {
+  translate: /* @__PURE__ */ new Map([
+    [true, "yes"],
+    [false, "no"]
+  ])
+};
+function attr(name, value, is_boolean = false) {
+  if (value == null || !value && is_boolean) return "";
+  const normalized = name in replacements && replacements[name].get(value) || value;
+  const assignment = is_boolean ? "" : `="${escape_html(normalized, true)}"`;
+  return ` ${name}${assignment}`;
+}
+function to_style(value, styles) {
+  return value == null ? null : String(value);
+}
 var current_component = null;
 function getContext(key) {
   const context_map = get_or_init_context_map();
@@ -167,14 +198,9 @@ function head(payload, fn) {
   fn(head_payload);
   head_payload.out.push(BLOCK_CLOSE);
 }
-function bind_props(props_parent, props_now) {
-  for (const key in props_now) {
-    const initial_value = props_parent[key];
-    const value = props_now[key];
-    if (initial_value === void 0 && value !== void 0 && Object.getOwnPropertyDescriptor(props_parent, key)?.set) {
-      props_parent[key] = value;
-    }
-  }
+function attr_style(value, directives) {
+  var result = to_style(value);
+  return result ? ` style="${escape_html(result, true)}"` : "";
 }
 export {
   ASYNC as A,
@@ -182,6 +208,7 @@ export {
   CLEAN as C,
   DERIVED as D,
   ERROR_VALUE as E,
+  attr_style as F,
   HYDRATION_ERROR as H,
   INERT as I,
   LEGACY_PROPS as L,
@@ -212,6 +239,7 @@ export {
   setContext as u,
   pop as v,
   head as w,
-  getContext as x,
-  bind_props as y
+  attr as x,
+  getContext as y,
+  escape_html as z
 };
