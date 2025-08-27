@@ -419,7 +419,7 @@
       <div class="weather-conditions">
         {#if currentData.weatherDescription}
           <div class="weather-item">
-            <span class="label">Conditions:</span> {currentData.weatherDescription}
+            <span class="label">Conditions:</span> <span class="conditions">{currentData.weatherDescription}</span>
           </div>
         {/if}
         

@@ -97,6 +97,10 @@ body {
   opacity: 0;
 }
 
+.conditions {
+  text-transform: lowercase;
+}
+
 /* Layering: webcam image < raindrops (2) < weather overlay (3) < progress (5) */
 
 /* Raindrops layering and animation */
