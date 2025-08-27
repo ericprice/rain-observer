@@ -426,13 +426,13 @@
       <div class="weather-conditions">
         {#if currentData.weatherDescription}
           <div class="weather-item">
-            <span class="label">Conditions:</span> <span class="conditions">{currentData.weatherDescription}</span>
+            {currentData.weatherDescription}
           </div>
         {/if}
         
         {#if currentData.rain.details.temperature != null}
           <div class="weather-item">
-            <span class="label">Temperature:</span> {formatTempBoth(currentData.rain.details.temperature)}
+            {formatTempBoth(currentData.rain.details.temperature)}
             {#if currentData.rain.details.apparent_temperature != null}
               <span class="temperature-feels-like"> (feels like {formatTempBoth(currentData.rain.details.apparent_temperature)})</span>
             {/if}
