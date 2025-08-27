@@ -1,6 +1,6 @@
-// Import partial files
-@import 'reset';
-@import 'fonts';
+// Import partial files (Sass modules)
+@use 'reset';
+@use 'fonts';
 
 body,
 html {
@@ -45,6 +45,7 @@ body {
   left: 0;
   right: 0;
   padding: .125em;
+  z-index: 3;
 }
 
 .progress-bottom {
@@ -60,9 +61,16 @@ body {
 .progress-fill {
   height: 100%;
   background: #f20;
-  transition: width 0.1s linear;
+  transform-origin: left center;
+  transition: transform 0.1s linear;
+  will-change: transform;
   border: .0125em solid #fd0;
   box-shadow: .05em .05em 0 #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .raindrops-overlay { display: none; }
+  .progress-fill { transition: none; }
 }
 
 /* Fade non-location parts of the overlay on idle */
@@ -75,9 +83,6 @@ body {
 }
 
 /* Layering: webcam image < raindrops (2) < weather overlay (3) < progress (5) */
-.weather-overlay {
-  z-index: 3;
-}
 
 /* Raindrops layering and animation */
 .raindrops-overlay {
@@ -91,8 +96,8 @@ body {
   position: absolute;
   border-radius: 50%;
   /* subtle lens effect */
-  backdrop-filter: blur(.6m) saturate(200%) contrast(120%);
-  -webkit-backdrop-filter: blur(.6em) saturate(200%) contrast(110%);
+  backdrop-filter: blur(.6em) saturate(170%) contrast(130%);
+  -webkit-backdrop-filter: blur(.6em) saturate(170%) contrast(130%);
   background: radial-gradient(closest-side, rgba(255,255,255,.25), rgba(255,255,255,.15) 60%, rgba(255,255,255,.07) 80%, rgba(255,255,255,0) 90%);
   box-shadow: inset 0 .02em .2em rgba(255,255,255,.5), inset 0 -.03em .3em rgba(0,0,0,.3);
   will-change: transform;

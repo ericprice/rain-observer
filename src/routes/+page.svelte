@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import '../lib/assets/styles/main.scss';
+  import '$lib/assets/styles/main.scss';
   
   let { data: initialData } = $props<{
     data: {
@@ -41,10 +41,29 @@
   const CAMERA_INTERVAL_MS = 30000;
   let progressRatio = $state(0); // 0 = just reset, 1 = will switch now
   let lastResetAt = $state(Date.now());
+  let progressRaf: number | null = null;
 
   function resetProgress() {
     lastResetAt = Date.now();
     progressRatio = 0;
+  }
+
+  function startProgressLoop() {
+    if (progressRaf != null) cancelAnimationFrame(progressRaf);
+    const tick = () => {
+      const elapsed = Date.now() - lastResetAt;
+      const r = Math.min(1, elapsed / CAMERA_INTERVAL_MS);
+      if (r !== progressRatio) progressRatio = r;
+      progressRaf = requestAnimationFrame(tick);
+    };
+    progressRaf = requestAnimationFrame(tick);
+  }
+
+  function stopProgressLoop() {
+    if (progressRaf != null) {
+      cancelAnimationFrame(progressRaf);
+      progressRaf = null;
+    }
   }
   
   async function fetchNewCamera() {
@@ -79,7 +98,7 @@
     }
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
-      isIdle = true; // enter idle after 5s
+      isIdle = true; // enter idle after timeout
     }, IDLE_TIMEOUT_MS);
   }
 
@@ -94,74 +113,27 @@
     };
   }
   
-  onMount(() => {
-    // Refresh image every 3 seconds
-    const imageInterval = setInterval(() => {
-      if (currentData.webcam?.imageUrl) {
-        // Add timestamp to force browser to reload image
-        const baseUrl = currentData.webcam.imageUrl.split('?')[0];
-        const params = new URLSearchParams(currentData.webcam.imageUrl.split('?')[1] || '');
-        params.set('refresh', Date.now().toString());
-        imgUrl = `${baseUrl}?${params.toString()}`;
-        imageRefreshCount++;
-      }
-    }, 3000); // Refresh image every 3 seconds
-    
-    // Switch to new camera every 60 seconds
-    const cameraInterval = setInterval(() => {
-      fetchNewCamera();
-    }, CAMERA_INTERVAL_MS); // Switch camera every 60 seconds
-
-    // Progress timer at ~60 FPS
-    resetProgress();
-    const progressInterval = setInterval(() => {
-      const elapsed = Date.now() - lastResetAt;
-      progressRatio = Math.min(1, elapsed / CAMERA_INTERVAL_MS);
-    }, 1000 / 60);
-    
-    // Start raindrops
-    scheduleNextDrop();
-
-    return () => {
-      clearInterval(imageInterval);
-      clearInterval(cameraInterval);
-      clearInterval(progressInterval);
-      if (raindropTimer) clearTimeout(raindropTimer);
-      if (raindropsContainer) raindropsContainer.innerHTML = '';
-    };
-  });
-  
-  function formatTemp(temp?: number): string {
-    if (temp == null) return '';
-    return `${Math.round(temp)}°C`;
-  }
-  
-  function formatCoords(lat: number, lon: number): string {
-    const latDir = lat >= 0 ? 'N' : 'S';
-    const lonDir = lon >= 0 ? 'E' : 'W';
-    return `${Math.abs(lat).toFixed(2)}°${latDir}, ${Math.abs(lon).toFixed(2)}°${lonDir}`;
-  }
-  
-  function formatLastUpdated(timestamp?: string): string {
-    if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins === 1) return '1 minute ago';
-    if (diffMins < 60) return `${diffMins} minutes ago`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours === 1) return '1 hour ago';
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    
-    return date.toLocaleString();
-  }
-
+  // Raindrops
   let raindropsContainer: HTMLDivElement | null = null;
   let raindropTimer: ReturnType<typeof setTimeout> | null = null;
+  let containerRect: DOMRect | null = null;
+  const baseMaxDrops = 80;
+  const MAX_RAINDROPS = (navigator as any).deviceMemory && (navigator as any).deviceMemory <= 2 ? Math.floor(baseMaxDrops / 2) : baseMaxDrops;
+
+  let resizeObs: ResizeObserver | null = null;
+
+  function setupContainerObserver(node: HTMLElement) {
+    containerRect = node.getBoundingClientRect();
+    resizeObs = new ResizeObserver(() => {
+      containerRect = node.getBoundingClientRect();
+    });
+    resizeObs.observe(node);
+  }
+
+  function teardownContainerObserver() {
+    resizeObs?.disconnect();
+    resizeObs = null;
+  }
 
   function randomBetween(min: number, max: number): number {
     return Math.random() * (max - min) + min;
@@ -175,11 +147,20 @@
     }, delayMs);
   }
 
+  function startRaindrops() {
+    if (!raindropTimer) scheduleNextDrop();
+  }
+
+  function stopRaindrops() {
+    if (raindropTimer) clearTimeout(raindropTimer);
+    raindropTimer = null;
+  }
+
   function spawnRaindrop() {
     const container = raindropsContainer;
     if (!container) return;
 
-    const rect = container.getBoundingClientRect();
+    const rect = containerRect ?? container.getBoundingClientRect();
     const containerFontSize = parseFloat(getComputedStyle(container).fontSize) || 16;
 
     const sizeEm = randomBetween(0.5, 1.5);
@@ -211,7 +192,105 @@
 
     drop.addEventListener('animationend', onAnimEnd);
 
+    // cap DOM nodes to avoid bloat
+    if (container.children.length > MAX_RAINDROPS) {
+      container.firstElementChild?.remove();
+    }
+
     container.appendChild(drop);
+  }
+
+  onMount(() => {
+    // Refresh image every 3 seconds
+    let imageInterval = setInterval(() => {
+      if (currentData.webcam?.imageUrl) {
+        // Add timestamp to force browser to reload image
+        const baseUrl = currentData.webcam.imageUrl.split('?')[0];
+        const params = new URLSearchParams(currentData.webcam.imageUrl.split('?')[1] || '');
+        params.set('refresh', Date.now().toString());
+        imgUrl = `${baseUrl}?${params.toString()}`;
+        imageRefreshCount++;
+      }
+    }, 3000); // Refresh image every 3 seconds
+    
+    // Switch to new camera every CAMERA_INTERVAL_MS
+    let cameraInterval = setInterval(() => {
+      fetchNewCamera();
+    }, CAMERA_INTERVAL_MS);
+
+    // Progress via rAF
+    resetProgress();
+    startProgressLoop();
+
+    // Start raindrops
+    if (raindropsContainer) setupContainerObserver(raindropsContainer);
+    startRaindrops();
+
+    // Pause/resume on tab visibility
+    const onVis = () => {
+      if (document.hidden) {
+        clearInterval(imageInterval);
+        clearInterval(cameraInterval);
+        stopProgressLoop();
+        stopRaindrops();
+      } else {
+        // restart
+        imageInterval = setInterval(() => {
+          if (currentData.webcam?.imageUrl) {
+            const baseUrl = currentData.webcam.imageUrl.split('?')[0];
+            const params = new URLSearchParams(currentData.webcam.imageUrl.split('?')[1] || '');
+            params.set('refresh', Date.now().toString());
+            imgUrl = `${baseUrl}?${params.toString()}`;
+            imageRefreshCount++;
+          }
+        }, 3000);
+        cameraInterval = setInterval(() => {
+          fetchNewCamera();
+        }, CAMERA_INTERVAL_MS);
+        resetProgress();
+        startProgressLoop();
+        startRaindrops();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    
+    return () => {
+      clearInterval(imageInterval);
+      clearInterval(cameraInterval);
+      stopProgressLoop();
+      stopRaindrops();
+      teardownContainerObserver();
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  });
+  
+  function formatTemp(temp?: number): string {
+    if (temp == null) return '';
+    return `${Math.round(temp)}°C`;
+  }
+  
+  function formatCoords(lat: number, lon: number): string {
+    const latDir = lat >= 0 ? 'N' : 'S';
+    const lonDir = lon >= 0 ? 'E' : 'W';
+    return `${Math.abs(lat).toFixed(2)}°${latDir}, ${Math.abs(lon).toFixed(2)}°${lonDir}`;
+  }
+  
+  function formatLastUpdated(timestamp?: string): string {
+    if (!timestamp) return 'Unknown';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins === 1) return '1 minute ago';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours === 1) return '1 hour ago';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    
+    return date.toLocaleString();
   }
 </script>
 
@@ -225,7 +304,7 @@
 
   <!-- Bottom countdown progress bar -->
   <div class="progress-bottom">
-    <div class="progress-fill" style={`width: ${Math.round(progressRatio * 100)}%`}></div>
+    <div class="progress-fill" style={`transform: scaleX(${progressRatio})`}></div>
   </div>
   
   <!-- Weather info overlay -->
