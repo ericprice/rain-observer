@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { isRainingAt, getWeatherDescription } from '$lib/server/openmeteo';
+import { isRainingAt, getWeatherDescription, fetchTimezoneInfo } from '$lib/server/openmeteo';
 import { fetchGlobalWebcamPool, fetchPopularWebcams, fetchRandomGlobalWebcams, fetchNearbyWebcams } from '$lib/server/webcams';
 import { env } from '$env/dynamic/private';
 
@@ -26,10 +26,13 @@ export const GET: RequestHandler = async () => {
     );
     const match = results.find((r) => r.rain.isRaining);
     if (match) {
+      const tz = await fetchTimezoneInfo(match.cam.latitude, match.cam.longitude);
       return json({ 
         webcam: match.cam, 
         rain: match.rain, 
         weatherDescription: getWeatherDescription(match.rain.details.weather_code),
+        timezoneId: tz.timezoneId,
+        timezoneOffsetSeconds: tz.offsetSeconds,
         hasWindyKey 
       });
     }
@@ -45,10 +48,13 @@ export const GET: RequestHandler = async () => {
       const cams = await fetchNearbyWebcams(lat, lon, 120);
       if (cams.length) {
         const cam = cams[Math.floor(Math.random() * cams.length)];
+        const tz = await fetchTimezoneInfo(cam.latitude, cam.longitude);
         return json({ 
           webcam: cam, 
           rain, 
           weatherDescription: getWeatherDescription(rain.details.weather_code),
+          timezoneId: tz.timezoneId,
+          timezoneOffsetSeconds: tz.offsetSeconds,
           hasWindyKey 
         });
       }
@@ -61,6 +67,8 @@ export const GET: RequestHandler = async () => {
     webcam: null, 
     rain: { isRaining: false, details: {} }, 
     weatherDescription: "Unknown",
+    timezoneId: null,
+    timezoneOffsetSeconds: null,
     hasWindyKey 
   });
 };

@@ -26,6 +26,21 @@ body {
   }
 }
 
+#local-time {
+  position: fixed;
+  top: .125em;
+  right: .125em;
+  white-space: nowrap;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+
+  &:first-child {
+    margin-left: 0;
+  }
+}
+
 .webcam-container {
   position: fixed;
   inset: 0;
@@ -74,11 +89,11 @@ body {
 }
 
 /* Fade non-location parts of the overlay on idle */
-.weather-overlay .weather-content > :not(.location-name) {
+.weather-overlay .weather-content > :not(.location-name):not(#local-time) {
   /* no transition here so returning from idle is instant */
 }
 
-.webcam-container.idle .weather-overlay .weather-content > :not(.location-name) {
+.webcam-container.idle .weather-overlay .weather-content > :not(.location-name):not(#local-time) {
   opacity: 0;
 }
 

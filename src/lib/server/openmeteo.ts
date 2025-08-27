@@ -1,3 +1,4 @@
+import tzLookup from 'tz-lookup';
 export type RainCheck = {
   isRaining: boolean;
   details: {
@@ -83,6 +84,33 @@ export async function isRainingAt(latitude: number, longitude: number): Promise<
   };
   cache.set(key, { value, expiresAt: now + TTL_MS });
   return value;
+}
+
+export type TimezoneInfo = { timezoneId: string | null; offsetSeconds: number | null };
+
+export async function fetchTimezoneInfo(latitude: number, longitude: number): Promise<TimezoneInfo> {
+  let name: string | null = null;
+  try {
+    name = tzLookup(latitude, longitude);
+  } catch {
+    name = null;
+  }
+  // Try to obtain numeric offset as a fallback for DST accuracy via Open-Meteo
+  let off: number | null = null;
+  try {
+    const url = new URL('https://api.open-meteo.com/v1/timezone');
+    url.searchParams.set('latitude', String(latitude));
+    url.searchParams.set('longitude', String(longitude));
+    const res = await fetch(url.toString(), { headers: { 'accept': 'application/json' } });
+    if (res.ok) {
+      const tz = await res.json().catch(() => ({} as any));
+      const tzOff = typeof tz?.utc_offset_seconds === 'number' ? tz.utc_offset_seconds : null;
+      off = Number.isFinite(tzOff) ? tzOff : null;
+    }
+  } catch {
+    off = null;
+  }
+  return { timezoneId: name, offsetSeconds: off };
 }
 
 type CacheEntry = { value: RainCheck; expiresAt: number };

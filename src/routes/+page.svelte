@@ -28,6 +28,8 @@
       };
       weatherDescription?: string;
       hasWindyKey?: boolean;
+      timezoneId?: string | null;
+      timezoneOffsetSeconds?: number | null;
     }
   }>();
 
@@ -77,6 +79,10 @@
         imgUrl = newData.webcam?.imageUrl ?? '';
         imageRefreshCount = 0; // Reset image refresh count for new camera
         cameraChangeCount++;
+        // update timezone from API response
+        timezoneId = (newData.timezoneId ?? null);
+        timezoneOffsetSeconds = (newData.timezoneOffsetSeconds ?? null);
+        startClock();
         resetProgress();
         setActive(); // show UI and restart idle timer on camera change
       }
@@ -114,11 +120,11 @@
   }
   
   // Raindrops
-  let raindropsContainer: HTMLDivElement | null = null;
+  let raindropsContainer: HTMLDivElement | null = $state(null);
   let raindropTimer: ReturnType<typeof setTimeout> | null = null;
   let containerRect: DOMRect | null = null;
   const baseMaxDrops = 80;
-  const MAX_RAINDROPS = (navigator as any).deviceMemory && (navigator as any).deviceMemory <= 2 ? Math.floor(baseMaxDrops / 2) : baseMaxDrops;
+  let MAX_RAINDROPS = baseMaxDrops; // set actual value in onMount based on deviceMemory when available
 
   let resizeObs: ResizeObserver | null = null;
 
@@ -200,7 +206,80 @@
     container.appendChild(drop);
   }
 
+  // Timezone + live clock (12h with AM/PM)
+  let timezoneId = $state<string | null>(initialData.timezoneId ?? null);
+  let timezoneOffsetSeconds = $state<number | null>(initialData.timezoneOffsetSeconds ?? null);
+  let clockText = $state('');
+  let clockHour = $state('');
+  let clockMinute = $state('');
+  let clockSecond = $state('');
+  let clockAmPm = $state('');
+  let clockInterval: ReturnType<typeof setInterval> | null = null;
+
+  function formatClock(): string {
+    let date: Date;
+    let tz: string | undefined;
+    if (typeof timezoneOffsetSeconds === 'number' && Number.isFinite(timezoneOffsetSeconds)) {
+      date = new Date(Date.now() + timezoneOffsetSeconds * 1000);
+      tz = 'UTC';
+    } else if (timezoneId) {
+      date = new Date();
+      tz = timezoneId;
+    } else {
+      date = new Date();
+      tz = undefined;
+    }
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: true, timeZone: tz
+    });
+    const parts = fmt.formatToParts(date);
+    const hour = parts.find(p => p.type === 'hour')?.value ?? '';
+    const minute = parts.find(p => p.type === 'minute')?.value ?? '';
+    const second = parts.find(p => p.type === 'second')?.value ?? '';
+    const dayPeriod = (parts.find(p => p.type === 'dayPeriod')?.value ?? '').toUpperCase();
+    clockHour = hour;
+    clockMinute = minute;
+    clockSecond = second;
+    clockAmPm = dayPeriod;
+    return `${hour}:${minute}:${second}${dayPeriod ? ` ${dayPeriod}` : ''}`;
+  }
+
+  function startClock() {
+    if (clockInterval) clearInterval(clockInterval);
+    clockText = formatClock();
+    console.log('[clock] start', { timezoneId, timezoneOffsetSeconds, clockText });
+    if (!clockText) clockText = '...';
+    clockInterval = setInterval(() => {
+      clockText = formatClock();
+      console.log('[clock] tick', { timezoneId, timezoneOffsetSeconds, clockText });
+    }, 1000);
+  }
+
+  function stopClock() {
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = null;
+  }
+
+  // Compute initial clock value for SSR/first paint
+  clockText = formatClock();
+
   onMount(() => {
+    startClock();
+    
+    // Decide max raindrops based on device memory (if available)
+    try {
+      const dm = (navigator as any)?.deviceMemory;
+      if (typeof dm === 'number' && dm <= 2) {
+        MAX_RAINDROPS = Math.floor(baseMaxDrops / 2);
+      } else {
+        MAX_RAINDROPS = baseMaxDrops;
+      }
+    } catch {
+      MAX_RAINDROPS = baseMaxDrops;
+    }
+    // Clock already seeded from server on mount via initialData; no client timezone fetch
+    
     // Refresh image every 3 seconds
     let imageInterval = setInterval(() => {
       if (currentData.webcam?.imageUrl) {
@@ -233,6 +312,7 @@
         clearInterval(cameraInterval);
         stopProgressLoop();
         stopRaindrops();
+        stopClock();
       } else {
         // restart
         imageInterval = setInterval(() => {
@@ -250,6 +330,7 @@
         resetProgress();
         startProgressLoop();
         startRaindrops();
+        startClock();
       }
     };
     document.addEventListener('visibilitychange', onVis);
@@ -261,6 +342,7 @@
       stopRaindrops();
       teardownContainerObserver();
       document.removeEventListener('visibilitychange', onVis);
+      stopClock();
     };
   });
   
@@ -324,6 +406,13 @@
       <!-- Coordinates -->
       <div class="coordinates">
         {formatCoords(currentData.webcam.latitude, currentData.webcam.longitude)}
+      </div>
+      <!-- Local time (12h) for webcam location -->
+      <div id="local-time">
+        <span class="tabular">{clockHour}</span>:<span class="tabular">{clockMinute}</span>:<span class="tabular">{clockSecond}</span>
+        {#if clockAmPm}
+          <span> {clockAmPm}</span>
+        {/if}
       </div>
       
       <!-- Weather conditions -->
