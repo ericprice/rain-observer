@@ -351,6 +351,13 @@
     return `${Math.round(temp)}°C`;
   }
   
+  function formatTempBoth(temp?: number): string {
+    if (temp == null) return '';
+    const c = Math.round(temp);
+    const f = Math.round((temp * 9) / 5 + 32);
+    return `${c}°C/${f}°F`;
+  }
+  
   function formatCoords(lat: number, lon: number): string {
     const latDir = lat >= 0 ? 'N' : 'S';
     const lonDir = lon >= 0 ? 'E' : 'W';
@@ -425,9 +432,9 @@
         
         {#if currentData.rain.details.temperature != null}
           <div class="weather-item">
-            <span class="label">Temperature:</span> {formatTemp(currentData.rain.details.temperature)}
+            <span class="label">Temperature:</span> {formatTempBoth(currentData.rain.details.temperature)}
             {#if currentData.rain.details.apparent_temperature != null}
-              <span class="temperature-feels-like"> (feels like {formatTemp(currentData.rain.details.apparent_temperature)})</span>
+              <span class="temperature-feels-like"> (feels like {formatTempBoth(currentData.rain.details.apparent_temperature)})</span>
             {/if}
           </div>
         {/if}
